@@ -3,6 +3,7 @@ import { Modal, Field, inputCls, Btn } from "./common.jsx";
 import { saveStop, deleteStop } from "../firebase.js";
 import { APP, STOP_TYPES } from "../config.js";
 import { AREAS } from "../lib/areas.js";
+import Icon from "./icons.jsx";
 
 export default function StopForm({ stop, onClose }) {
   const [name, setName] = useState(stop?.name || "");
@@ -70,12 +71,12 @@ export default function StopForm({ stop, onClose }) {
             <button
               key={key}
               onClick={() => setType(key)}
-              className={`px-2 py-2 rounded-lg border text-xs font-semibold text-center transition-colors ${
+              className={`flex flex-col items-center gap-1.5 px-2 py-2.5 rounded-xl border text-xs font-medium text-center transition-colors ${
                 type === key ? "border-transparent text-white" : "border-stone-200 text-stone-600 hover:bg-stone-50"
               }`}
               style={type === key ? { background: t.color } : {}}
             >
-              <div className="text-base">{t.icon}</div>
+              <Icon name={t.icon} size={18} />
               {t.short}
             </button>
           ))}

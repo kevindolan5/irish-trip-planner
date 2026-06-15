@@ -9,25 +9,26 @@ import OrganiseBoard from "./components/OrganiseBoard.jsx";
 import GuestForm from "./components/GuestForm.jsx";
 import StopForm from "./components/StopForm.jsx";
 import GuestDetail from "./components/GuestDetail.jsx";
-import { Btn } from "./components/common.jsx";
+import Icon from "./components/icons.jsx";
 
 const VIEWS = [
-  { key: "timeline", label: "Timeline", icon: "📅" },
-  { key: "map", label: "Map", icon: "🗺️" },
-  { key: "organise", label: "Organise", icon: "🛏️", adminHint: true },
+  { key: "timeline", label: "Timeline", icon: "calendar" },
+  { key: "map", label: "Map", icon: "map" },
+  { key: "organise", label: "Organise", icon: "bed" },
 ];
 
 function Countdown() {
   const days = toDay(APP.weddingDate) - toDay(todayIso());
   const text =
     days > 1 ? `${days} days to go` :
-    days === 1 ? "Tomorrow!" :
-    days === 0 ? "Today! 🎉" :
+    days === 1 ? "Tomorrow" :
+    days === 0 ? "Today" :
     `${-days} days married`;
   return (
-    <span className="text-xs sm:text-sm bg-white/15 border border-white/25 rounded-full px-3 py-1 font-semibold whitespace-nowrap">
-      💍 {fmt(APP.weddingDate, { weekday: "short", year: "numeric" })} · {text}
-    </span>
+    <div className="text-right leading-tight shrink-0">
+      <div className="text-sm font-medium text-emerald-900">{fmt(APP.weddingDate, { weekday: "long", day: "numeric", month: "long" })}</div>
+      <div className="text-xs text-stone-500">{text}</div>
+    </div>
   );
 }
 
@@ -36,7 +37,7 @@ export default function App() {
   const [stops, setStops] = useState([]);
   const [view, setView] = useState("timeline");
   const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem("iwp_admin") === "1");
-  const [editGuest, setEditGuest] = useState(undefined); // undefined = closed, null = new
+  const [editGuest, setEditGuest] = useState(undefined);
   const [detailGuest, setDetailGuest] = useState(null);
   const [editStop, setEditStop] = useState(undefined);
   const [dragGuestId, setDragGuestId] = useState(null);
@@ -66,46 +67,54 @@ export default function App() {
     }
   }
 
+  const views = VIEWS.filter((v) => v.key !== "organise" || isAdmin);
+
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-screen flex flex-col bg-[#fbfbfa]">
       {/* top bar */}
-      <header className="bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-700 text-white shrink-0">
-        <div className="px-4 py-3 flex items-center gap-3">
-          <button className="sm:hidden text-white/80 text-xl" onClick={() => setSidebarOpen((v) => !v)}>☰</button>
+      <header className="bg-white border-b border-stone-200 shrink-0">
+        <div className="px-4 sm:px-6 py-3.5 flex items-center gap-3">
+          <button className="sm:hidden text-stone-500 -ml-1 p-1" onClick={() => setSidebarOpen((v) => !v)} aria-label="Toggle travellers menu">
+            <Icon name="menu" size={22} />
+          </button>
           <div className="flex-1 min-w-0">
-            <h1 className="font-display text-lg sm:text-2xl font-bold leading-tight truncate">☘️ {APP.title}</h1>
-            <p className="text-xs text-white/70 hidden sm:block truncate">{APP.subtitle}</p>
+            <h1 className="font-display text-xl sm:text-[1.6rem] text-emerald-950 leading-none tracking-tight truncate">{APP.title}</h1>
+            <p className="text-xs text-stone-500 hidden sm:block truncate mt-1">{APP.subtitle}</p>
           </div>
           <Countdown />
         </div>
-        <div className="px-2 sm:px-4 flex items-center gap-1 border-t border-white/10">
-          {VIEWS.filter((v) => v.key !== "organise" || isAdmin).map((v) => (
+        <div className="px-3 sm:px-6 flex items-center gap-1">
+          {views.map((v) => (
             <button
               key={v.key}
               onClick={() => setView(v.key)}
-              className={`px-3 sm:px-4 py-2.5 text-sm font-semibold border-b-2 transition-colors ${
-                view === v.key ? "border-amber-400 text-white" : "border-transparent text-white/70 hover:text-white"
+              className={`flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                view === v.key
+                  ? "border-emerald-600 text-emerald-900"
+                  : "border-transparent text-stone-500 hover:text-stone-800"
               }`}
             >
-              <span className="mr-1">{v.icon}</span>{v.label}
+              <Icon name={v.icon} size={16} />
+              {v.label}
             </button>
           ))}
           <button
             onClick={toggleAdmin}
-            className="ml-auto text-xs text-white/60 hover:text-white px-2 py-2"
+            className={`ml-auto text-xs px-2.5 py-1.5 rounded-lg transition-colors ${
+              isAdmin ? "text-emerald-700 hover:bg-emerald-50" : "text-stone-500 hover:text-stone-800 hover:bg-stone-100"
+            }`}
             title={isAdmin ? "You're in organiser mode" : "Unlock organiser controls"}
           >
-            {isAdmin ? "Organiser ✓" : "Organiser login"}
+            {isAdmin ? "Organiser ·  on" : "Organiser"}
           </button>
         </div>
       </header>
 
       {/* body */}
       <div className="flex-1 flex min-h-0">
-        {/* sidebar */}
         <aside
           className={`bg-white border-r border-stone-200 w-72 shrink-0 z-20 ${
-            sidebarOpen ? "fixed inset-y-0 left-0 top-[104px] shadow-2xl" : "hidden"
+            sidebarOpen ? "fixed inset-y-0 left-0 top-[108px] shadow-2xl" : "hidden"
           } sm:static sm:block sm:shadow-none`}
         >
           <Sidebar
@@ -119,8 +128,7 @@ export default function App() {
         </aside>
         {sidebarOpen && <div className="fixed inset-0 bg-black/20 z-10 sm:hidden" onClick={() => setSidebarOpen(false)} />}
 
-        {/* main */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <main className="flex-1 overflow-y-auto px-4 sm:px-8 py-5 sm:py-7">
           <div className="max-w-5xl mx-auto">
             {view === "timeline" && <Timeline guests={guests} stops={stops} onPickGuest={setDetailGuest} />}
             {view === "map" && <MapView stops={stops} guests={guests} />}
@@ -138,7 +146,6 @@ export default function App() {
         </main>
       </div>
 
-      {/* modals */}
       {editGuest !== undefined && (
         <GuestForm guest={editGuest} canDelete={isAdmin} onClose={() => setEditGuest(undefined)} />
       )}
