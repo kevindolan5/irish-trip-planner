@@ -3,7 +3,7 @@ import { Modal, Field, inputCls, Btn } from "./common.jsx";
 import { saveStop, deleteStop } from "../firebase.js";
 import { APP, STOP_TYPES } from "../config.js";
 import { AREAS } from "../lib/areas.js";
-import { geocode } from "../lib/geocode.js";
+import { geocode, parseCoords } from "../lib/geocode.js";
 import Icon from "./icons.jsx";
 
 export default function StopForm({ stop, onClose }) {
@@ -16,39 +16,34 @@ export default function StopForm({ stop, onClose }) {
   const [capacity, setCapacity] = useState(stop?.capacity || "");
   const [link, setLink] = useState(stop?.link || "");
   const [notes, setNotes] = useState(stop?.notes || "");
-  const [lat, setLat] = useState(stop?.lat ?? null);
-  const [lng, setLng] = useState(stop?.lng ?? null);
-  const [geo, setGeo] = useState(stop?.lat != null ? { status: "ok", label: stop.address || "Pinned" } : { status: "idle" });
+  const [pin, setPin] = useState(stop?.lat != null ? `${stop.lat}, ${stop.lng}` : "");
+  const [geoResult, setGeoResult] = useState(null);
+  const [geoStatus, setGeoStatus] = useState("idle"); // idle | searching | fail
   const [busy, setBusy] = useState(false);
 
   const isActivity = type === "activity";
   const valid = name.trim() && (isActivity || (from && to && to > from));
 
+  // A pasted link/coords (exact) wins; otherwise the geocoded address result.
+  const exact = parseCoords(pin);
+  const coords = exact || (geoResult ? { lat: geoResult.lat, lng: geoResult.lng } : null);
+
   async function locate() {
-    const q = address.trim() || [name.trim(), area.trim(), "Ireland"].filter(Boolean).join(", ");
+    const q = address.trim() || [name.trim(), area.trim()].filter(Boolean).join(", ");
     if (!q) return;
-    setGeo({ status: "searching" });
+    setPin(""); // "use the address instead"
+    setGeoResult(null);
+    setGeoStatus("searching");
     try {
       const hit = await geocode(q);
       if (hit) {
-        setLat(hit.lat);
-        setLng(hit.lng);
-        setGeo({ status: "ok", label: hit.label });
+        setGeoResult(hit);
+        setGeoStatus("ok");
       } else {
-        setGeo({ status: "fail" });
+        setGeoStatus("fail");
       }
     } catch {
-      setGeo({ status: "fail" });
-    }
-  }
-
-  // typing a new address invalidates the previous pin
-  function onAddressChange(v) {
-    setAddress(v);
-    if (geo.status === "ok") {
-      setGeo({ status: "idle" });
-      setLat(null);
-      setLng(null);
+      setGeoStatus("fail");
     }
   }
 
@@ -60,8 +55,8 @@ export default function StopForm({ stop, onClose }) {
       type,
       address: address.trim(),
       area: area.trim(),
-      lat: lat != null ? Number(lat) : null,
-      lng: lng != null ? Number(lng) : null,
+      lat: coords ? coords.lat : null,
+      lng: coords ? coords.lng : null,
       link: link.trim(),
       notes: notes.trim(),
     };
@@ -122,32 +117,60 @@ export default function StopForm({ stop, onClose }) {
         <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder={isActivity ? "e.g. Cliffs of Moher" : "e.g. Galway Airbnb, Mary's house"} autoFocus />
       </Field>
 
-      <Field label="Address" hint="Full street address or Eircode — guests will use this to find the place. Hit Locate to pin it exactly on the map.">
+      <Field label="Address" hint="Full street address or Eircode — guests see this and use it for Directions (Google Maps handles Eircodes). Hit Locate to drop a map pin.">
         <div className="flex gap-2">
           <input
             className={inputCls}
             value={address}
-            onChange={(e) => onAddressChange(e.target.value)}
-            placeholder="e.g. 12 Sea Road, Galway, H91 ABC1"
+            onChange={(e) => setAddress(e.target.value)}
+            placeholder="e.g. 30 Westfields, Clare Road, Ennis, V95 X6NE"
             onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), locate())}
           />
-          <Btn variant="outline" onClick={locate} disabled={geo.status === "searching"} className="shrink-0">
-            {geo.status === "searching" ? "…" : "Locate"}
+          <Btn variant="outline" onClick={locate} disabled={geoStatus === "searching"} className="shrink-0">
+            {geoStatus === "searching" ? "…" : "Locate"}
           </Btn>
         </div>
-        {geo.status === "ok" && (
+        {geoStatus === "ok" && geoResult && !geoResult.approx && (
           <span className="flex items-start gap-1.5 text-xs text-emerald-700 mt-1.5">
             <Icon name="map" size={13} className="mt-0.5 shrink-0" />
-            <span className="leading-snug">Pinned: {geo.label}</span>
+            <span className="leading-snug">Pinned: {geoResult.label}</span>
           </span>
         )}
-        {geo.status === "fail" && (
-          <span className="block text-xs text-amber-700 mt-1.5">Couldn't find that exactly — try a fuller address, or set the town below and we'll place it there.</span>
+        {geoStatus === "ok" && geoResult && geoResult.approx && (
+          <span className="block text-xs text-amber-700 mt-1.5 leading-snug">
+            Pinned near <b>{geoResult.label}</b> — house numbers and Eircodes can't be matched. For an exact spot, paste a Google Maps link below.
+          </span>
+        )}
+        {geoStatus === "fail" && (
+          <span className="block text-xs text-amber-700 mt-1.5 leading-snug">Couldn't place that address. Paste a Google Maps link or coordinates below for an exact pin.</span>
         )}
       </Field>
 
-      <Field label="Town / area" hint="Used to group stops and as a map fallback if the address can't be pinned.">
-        <input className={inputCls} value={area} onChange={(e) => setArea(e.target.value)} list="area-list" placeholder="e.g. Galway" />
+      <Field
+        label="Exact pin (optional)"
+        hint="Best for Eircodes: open Google Maps, search the address, copy the link (or right-click the spot → click the coordinates to copy), and paste it here."
+      >
+        <input
+          className={inputCls}
+          value={pin}
+          onChange={(e) => setPin(e.target.value)}
+          placeholder="Google Maps link, or 52.838, -8.983"
+        />
+        {exact && (
+          <span className="flex items-center gap-1.5 text-xs text-emerald-700 mt-1.5">
+            <Icon name="map" size={13} className="shrink-0" />
+            Exact pin set ({exact.lat.toFixed(4)}, {exact.lng.toFixed(4)})
+          </span>
+        )}
+        {pin && !exact && (
+          <span className="block text-xs text-amber-700 mt-1.5 leading-snug">
+            Couldn't read coordinates from that. Paste the full Google Maps URL (the one containing <code>@53.2,-9.0</code>) or plain <code>lat, lng</code>.
+          </span>
+        )}
+      </Field>
+
+      <Field label="Town / area" hint="Used to group stops and as a map fallback if nothing above pins it.">
+        <input className={inputCls} value={area} onChange={(e) => setArea(e.target.value)} list="area-list" placeholder="e.g. Ennis" />
         <datalist id="area-list">
           {areaList.map((a) => <option key={a} value={a.replace(/\b\w/g, (c) => c.toUpperCase())} />)}
         </datalist>
