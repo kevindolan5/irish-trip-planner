@@ -49,17 +49,19 @@ npm install
 npm run dev      # http://localhost:8742
 ```
 
-## Deploy (free)
+## Deploy (Netlify)
 
-It's a static build — host it anywhere, same as guestplanner.
+Hosted on Netlify, connected to this GitHub repo for continuous deployment —
+every push to `main` rebuilds automatically (build settings are in
+[`netlify.toml`](netlify.toml)). Because the data lives in Firebase, you only
+redeploy when the *code* changes; adding people/stops happens live in the app.
+
+Manual deploy if ever needed:
 
 ```bash
-npm run build    # outputs to dist/
+npm run build                     # outputs to dist/
+npx netlify-cli deploy --prod     # or drag dist/ onto https://app.netlify.com/drop
 ```
-
-Then drag `dist/` onto https://app.netlify.com/drop, or push to GitHub and point
-Netlify/Vercel/GitHub Pages at it. Because the data is in Firebase, you only
-redeploy when the *code* changes — adding people/stops happens live in the app.
 
 ## Tweak
 
