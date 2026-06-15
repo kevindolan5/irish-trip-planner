@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { STOP_TYPES } from "../config.js";
 import { fmt, nights } from "../lib/dates.js";
 import { setAssignment } from "../firebase.js";
+import { mapsLink } from "../lib/geocode.js";
 import { Btn } from "./common.jsx";
 import Icon from "./icons.jsx";
 
@@ -57,6 +58,14 @@ function StopCard({ stop, guests, onEdit, dragGuestId, setDragGuestId }) {
       </div>
 
       <div className="px-4 py-3 flex-1">
+        {stop.address && (
+          <p className="text-xs text-stone-600 mb-2 leading-relaxed">
+            {stop.address}
+            {mapsLink(stop) && (
+              <> · <a href={mapsLink(stop)} target="_blank" rel="noopener" className="text-emerald-700 hover:underline font-medium">map</a></>
+            )}
+          </p>
+        )}
         {stop.notes && <p className="text-xs text-stone-500 mb-2.5 leading-relaxed">{stop.notes}</p>}
         {isActivity ? (
           <p className="text-xs text-stone-400 italic">Recommendation — no one's assigned to activities.</p>

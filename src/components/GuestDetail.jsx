@@ -2,6 +2,7 @@ import React from "react";
 import { Modal, Btn } from "./common.jsx";
 import { COVERAGE } from "../config.js";
 import { guestCoverage, fmt, dayToIso, nights } from "../lib/dates.js";
+import { mapsLink } from "../lib/geocode.js";
 
 export default function GuestDetail({ guest, stops, canEdit, onEdit, onClose }) {
   const { segments, summary } = guestCoverage(guest, stops);
@@ -51,9 +52,15 @@ export default function GuestDetail({ guest, stops, canEdit, onEdit, onClose }) 
                     {s.status === "book-your-own" && " · book your own"}
                     {s.status === "gap" && " · nothing planned yet"}
                   </div>
-                  {s.stop?.link && s.status === "book-your-own" && (
-                    <a href={s.stop.link} target="_blank" rel="noopener" className="text-xs text-amber-700 font-medium hover:underline">Suggested link →</a>
-                  )}
+                  {s.stop?.address && <div className="text-xs text-stone-500 mt-0.5">{s.stop.address}</div>}
+                  <div className="flex gap-3 mt-0.5">
+                    {s.stop && mapsLink(s.stop) && (
+                      <a href={mapsLink(s.stop)} target="_blank" rel="noopener" className="text-xs text-emerald-700 font-medium hover:underline">Directions →</a>
+                    )}
+                    {s.stop?.link && (
+                      <a href={s.stop.link} target="_blank" rel="noopener" className="text-xs text-emerald-700 font-medium hover:underline">Link →</a>
+                    )}
+                  </div>
                 </li>
               );
             })}
