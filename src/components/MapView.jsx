@@ -17,7 +17,7 @@ function pinIcon(type) {
   });
 }
 
-export default function MapView({ stops, guests }) {
+export default function MapView({ stops, guests, routes = [] }) {
   const ref = useRef(null);
   const mapRef = useRef(null);
   const layerRef = useRef(null);
@@ -87,6 +87,29 @@ export default function MapView({ stops, guests }) {
         </div>
       </div>
       <div ref={ref} className="h-[460px] sm:h-[580px] rounded-2xl border border-stone-200 overflow-hidden" style={{ zIndex: 0 }} />
+
+      {routes.length > 0 && (
+        <div className="mt-7">
+          <h2 className="font-display text-2xl text-emerald-950 tracking-tight mb-1">Getting around</h2>
+          <p className="text-sm text-stone-500 mb-4">Rough travel times between the main spots — Ireland's smaller than it looks, but the roads are slower.</p>
+          <ul className="bg-white border border-stone-200 rounded-2xl divide-y divide-stone-100">
+            {routes.map((r) => (
+              <li key={r.id} className="flex items-center gap-3 px-4 py-3">
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-stone-800 truncate">
+                    {r.from} <span className="text-stone-300">→</span> {r.to}
+                  </div>
+                  {r.note && <div className="text-xs text-stone-500 mt-0.5 truncate">{r.note}</div>}
+                </div>
+                <div className="text-right shrink-0">
+                  {r.duration && <div className="text-sm font-semibold text-emerald-800">{r.duration}</div>}
+                  {r.km != null && <div className="text-xs text-stone-400">{r.km} km</div>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

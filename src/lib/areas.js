@@ -35,6 +35,11 @@ export const AREAS = {
   birr: [53.0977, -7.9132],
   clonmel: [52.3559, -7.7039],
   cloughjordan: [52.9469, -8.0322],
+  ennis: [52.8436, -8.9864],
+  shannon: [52.7019, -8.8653],
+  ennistymon: [52.9419, -9.3056],
+  kerry: [52.1545, -9.5669],
+  "ring of kerry": [51.9986, -9.7],
 };
 
 export function resolveLatLng(stop) {

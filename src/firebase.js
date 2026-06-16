@@ -34,6 +34,7 @@ function subscribeCollection(name, cb, sortKey) {
 export const subscribeGuests = (cb) => subscribeCollection("guests", cb, "arrive");
 export const subscribeStops = (cb) => subscribeCollection("stops", cb, "from");
 export const subscribeItinerary = (cb) => subscribeCollection("itinerary", cb, "from");
+export const subscribeRoutes = (cb) => subscribeCollection("routes", cb, "from");
 
 // ---- writes -----------------------------------------------------------------
 
@@ -73,6 +74,16 @@ export function saveItineraryItem(id, data) {
 
 export function deleteItineraryItem(id) {
   return remove(child(rootRef, `itinerary/${id}`));
+}
+
+// Rough transport legs between spots.
+export function saveRoute(id, data) {
+  const r = id ? child(rootRef, `routes/${id}`) : push(child(rootRef, "routes"));
+  return id ? update(r, data) : set(r, data);
+}
+
+export function deleteRoute(id) {
+  return remove(child(rootRef, `routes/${id}`));
 }
 
 export { db };

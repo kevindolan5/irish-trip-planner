@@ -127,7 +127,7 @@ function StopCard({ stop, guests, onEdit, dragGuestId, setDragGuestId }) {
   );
 }
 
-export default function OrganiseBoard({ guests, stops, itinerary, onEditStop, onAddStop, onEditItinerary, onAddItinerary, dragGuestId, setDragGuestId }) {
+export default function OrganiseBoard({ guests, stops, itinerary, routes, onEditStop, onAddStop, onEditItinerary, onAddItinerary, onEditRoute, onAddRoute, dragGuestId, setDragGuestId }) {
   const beds = stops.filter((s) => s.type !== "activity");
   const activities = stops.filter((s) => s.type === "activity");
 
@@ -170,6 +170,34 @@ export default function OrganiseBoard({ guests, stops, itinerary, onEditStop, on
                 </li>
               );
             })}
+          </ul>
+        )}
+      </div>
+
+      {/* Getting around / transport */}
+      <div className="bg-white border border-stone-200 rounded-2xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="font-display text-base text-emerald-950">Getting around</h3>
+            <p className="text-xs text-stone-500 mt-0.5">Rough travel times between spots, shown under the map. “Estimate” fills the drive time for you.</p>
+          </div>
+          <Btn variant="outline" onClick={onAddRoute} className="shrink-0 !py-1.5"><Icon name="plus" size={14} /> Add route</Btn>
+        </div>
+        {(!routes || routes.length === 0) ? (
+          <p className="text-xs text-stone-400">Nothing yet — e.g. “Dublin → Ennis”, “Ennis → Kerry”.</p>
+        ) : (
+          <ul className="flex flex-wrap gap-2">
+            {routes.map((r) => (
+              <li key={r.id}>
+                <button
+                  onClick={() => onEditRoute(r)}
+                  className="flex items-center gap-2 rounded-lg pl-3 pr-3 py-1.5 text-xs bg-stone-50 text-stone-700 hover:bg-stone-100 transition"
+                >
+                  <span className="font-medium">{r.from} → {r.to}</span>
+                  {r.duration && <span className="text-emerald-700 font-medium">{r.duration}</span>}
+                </button>
+              </li>
+            ))}
           </ul>
         )}
       </div>
