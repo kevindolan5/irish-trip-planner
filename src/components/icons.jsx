@@ -8,6 +8,7 @@ const PATHS = {
   key: <><circle cx="7.5" cy="15.5" r="3.5" /><path d="M10 13l9-9M16 5l3 3M14 7l3 3" /></>,
   camera: <><path d="M14.5 4l1.5 2H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l1.5-2z" /><circle cx="12" cy="13" r="3.5" /></>,
   plus: <path d="M12 5v14M5 12h14" />,
+  minus: <path d="M5 12h14" />,
   x: <path d="M18 6 6 18M6 6l12 12" />,
   grip: <><circle cx="9" cy="6" r="1" /><circle cx="9" cy="12" r="1" /><circle cx="9" cy="18" r="1" /><circle cx="15" cy="6" r="1" /><circle cx="15" cy="12" r="1" /><circle cx="15" cy="18" r="1" /></>,
   arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
