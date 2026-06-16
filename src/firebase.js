@@ -33,6 +33,7 @@ function subscribeCollection(name, cb, sortKey) {
 
 export const subscribeGuests = (cb) => subscribeCollection("guests", cb, "arrive");
 export const subscribeStops = (cb) => subscribeCollection("stops", cb, "from");
+export const subscribeItinerary = (cb) => subscribeCollection("itinerary", cb, "from");
 
 // ---- writes -----------------------------------------------------------------
 
@@ -54,9 +55,24 @@ export function deleteStop(id) {
   return remove(child(rootRef, `stops/${id}`));
 }
 
-// Assign / unassign a guest to a stop (stored as a set under the stop).
+// Assign / unassign a guest to a stop. Value is `true` (whole-stop stay) or
+// `{ from, to }` for a custom sub-range within the stop.
 export function setAssignment(stopId, guestId, on) {
   return set(child(rootRef, `stops/${stopId}/guestIds/${guestId}`), on ? true : null);
+}
+
+export function setAssignmentRange(stopId, guestId, from, to) {
+  return set(child(rootRef, `stops/${stopId}/guestIds/${guestId}`), { from, to });
+}
+
+// Itinerary phases ("first week Ennis", "wedding weekend", "Kerry"…).
+export function saveItineraryItem(id, data) {
+  const r = id ? child(rootRef, `itinerary/${id}`) : push(child(rootRef, "itinerary"));
+  return id ? update(r, data) : set(r, data);
+}
+
+export function deleteItineraryItem(id) {
+  return remove(child(rootRef, `itinerary/${id}`));
 }
 
 export { db };

@@ -1,11 +1,11 @@
 import React, { useEffect, useRef } from "react";
-import { APP, COVERAGE } from "../config.js";
+import { APP, COVERAGE, ITINERARY_COLORS } from "../config.js";
 import { toDay, dayToIso, fmt, guestCoverage, todayIso } from "../lib/dates.js";
 
 const COL = 26; // px per day
 const NAME_W = 150;
 
-export default function Timeline({ guests, stops, onPickGuest }) {
+export default function Timeline({ guests, stops, itinerary = [], onPickGuest }) {
   const scrollRef = useRef(null);
 
   const start = toDay(APP.rangeStart);
@@ -66,6 +66,32 @@ export default function Timeline({ guests, stops, onPickGuest }) {
               })}
             </div>
           </div>
+
+          {/* itinerary band — the rough group plan */}
+          {itinerary.length > 0 && (
+            <div className="flex h-10 items-center border-b border-stone-200 bg-stone-50">
+              <div style={{ width: NAME_W, minWidth: NAME_W }} className="sticky left-0 z-[5] bg-stone-50 pl-4 pr-2 text-[11px] font-semibold uppercase tracking-[0.07em] text-stone-500">
+                The plan
+              </div>
+              <div className="relative h-full" style={{ width: nDays * COL }}>
+                {itinerary.map((p, i) => {
+                  const f = toDay(p.from), t = toDay(p.to);
+                  if (f == null || t == null) return null;
+                  const c = ITINERARY_COLORS[i % ITINERARY_COLORS.length];
+                  return (
+                    <div
+                      key={p.id}
+                      className="absolute top-2 h-6 rounded-md flex items-center px-2 overflow-hidden"
+                      style={{ left: x(f), width: (t - f + 1) * COL - 3, background: c.bg, borderLeft: `2.5px solid ${c.border}` }}
+                      title={`${p.label} · ${fmt(p.from)}–${fmt(p.to)}${p.note ? " · " + p.note : ""}`}
+                    >
+                      <span className="text-[11px] font-medium truncate" style={{ color: c.text }}>{p.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* rows */}
           {guests.length === 0 && (

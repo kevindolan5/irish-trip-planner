@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { APP } from "./config.js";
-import { subscribeGuests, subscribeStops } from "./firebase.js";
+import { subscribeGuests, subscribeStops, subscribeItinerary } from "./firebase.js";
 import { toDay, todayIso, fmt } from "./lib/dates.js";
 import Sidebar from "./components/Sidebar.jsx";
 import Timeline from "./components/Timeline.jsx";
@@ -8,6 +8,7 @@ import MapView from "./components/MapView.jsx";
 import OrganiseBoard from "./components/OrganiseBoard.jsx";
 import GuestForm from "./components/GuestForm.jsx";
 import StopForm from "./components/StopForm.jsx";
+import ItineraryForm from "./components/ItineraryForm.jsx";
 import GuestDetail from "./components/GuestDetail.jsx";
 import Icon from "./components/icons.jsx";
 
@@ -35,18 +36,21 @@ function Countdown() {
 export default function App() {
   const [guests, setGuests] = useState([]);
   const [stops, setStops] = useState([]);
+  const [itinerary, setItinerary] = useState([]);
   const [view, setView] = useState("timeline");
   const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem("iwp_admin") === "1");
   const [editGuest, setEditGuest] = useState(undefined);
   const [detailGuest, setDetailGuest] = useState(null);
   const [editStop, setEditStop] = useState(undefined);
+  const [editItinerary, setEditItinerary] = useState(undefined);
   const [dragGuestId, setDragGuestId] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const u1 = subscribeGuests(setGuests);
     const u2 = subscribeStops(setStops);
-    return () => { u1(); u2(); };
+    const u3 = subscribeItinerary(setItinerary);
+    return () => { u1(); u2(); u3(); };
   }, []);
 
   function toggleAdmin() {
@@ -130,14 +134,17 @@ export default function App() {
 
         <main className="flex-1 overflow-y-auto px-4 sm:px-8 py-5 sm:py-7">
           <div className="max-w-5xl mx-auto">
-            {view === "timeline" && <Timeline guests={guests} stops={stops} onPickGuest={setDetailGuest} />}
+            {view === "timeline" && <Timeline guests={guests} stops={stops} itinerary={itinerary} onPickGuest={setDetailGuest} />}
             {view === "map" && <MapView stops={stops} guests={guests} />}
             {view === "organise" && isAdmin && (
               <OrganiseBoard
                 guests={guests}
                 stops={stops}
+                itinerary={itinerary}
                 onEditStop={setEditStop}
                 onAddStop={() => setEditStop(null)}
+                onEditItinerary={setEditItinerary}
+                onAddItinerary={() => setEditItinerary(null)}
                 dragGuestId={dragGuestId}
                 setDragGuestId={setDragGuestId}
               />
@@ -150,6 +157,7 @@ export default function App() {
         <GuestForm guest={editGuest} canDelete={isAdmin} onClose={() => setEditGuest(undefined)} />
       )}
       {editStop !== undefined && <StopForm stop={editStop} onClose={() => setEditStop(undefined)} />}
+      {editItinerary !== undefined && <ItineraryForm item={editItinerary} onClose={() => setEditItinerary(undefined)} />}
       {detailGuest && (
         <GuestDetail
           guest={detailGuest}

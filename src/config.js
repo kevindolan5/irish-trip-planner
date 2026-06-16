@@ -56,6 +56,16 @@ export const STOP_TYPES = {
   },
 };
 
+// Muted palette for the itinerary band — cycled by order, distinct from coverage.
+export const ITINERARY_COLORS = [
+  { bg: "#eef2ff", border: "#6366f1", text: "#4338ca" }, // indigo
+  { bg: "#f0fdfa", border: "#0d9488", text: "#0f766e" }, // teal
+  { bg: "#fdf2f8", border: "#db2777", text: "#9d174d" }, // pink
+  { bg: "#fff7ed", border: "#ea580c", text: "#9a3412" }, // orange
+  { bg: "#f5f3ff", border: "#7c3aed", text: "#5b21b6" }, // violet
+  { bg: "#ecfeff", border: "#0891b2", text: "#155e75" }, // cyan
+];
+
 export const COVERAGE = {
   covered: { label: "Sorted", color: "#059669", bg: "#ecfdf5", text: "#047857" },
   "book-your-own": { label: "Book your own", color: "#d97706", bg: "#fffbeb", text: "#b45309" },

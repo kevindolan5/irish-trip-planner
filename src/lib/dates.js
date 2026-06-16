@@ -43,6 +43,35 @@ export function dayRange(startIso, endIso) {
   return out;
 }
 
+// The dates a guest is actually at a stop: their custom sub-range if set,
+// otherwise the stop's own range. Returns ISO strings + day numbers.
+export function stayRange(stop, guestId) {
+  const a = stop.guestIds && stop.guestIds[guestId];
+  const fromIso = a && a.from ? a.from : stop.from;
+  const toIso = a && a.to ? a.to : stop.to;
+  return { fromIso, toIso, from: toDay(fromIso), to: toDay(toIso) };
+}
+
+// Most beds needed at once across a stop's nights (so sequential stays in the
+// same house don't read as over capacity).
+export function peakOccupancy(stop, guests) {
+  const ids = Object.keys(stop.guestIds || {});
+  if (!ids.length) return 0;
+  const sizeOf = Object.fromEntries(guests.map((g) => [g.id, Number(g.partySize) || 1]));
+  const sFrom = toDay(stop.from), sTo = toDay(stop.to);
+  if (sFrom == null || sTo == null) return ids.reduce((n, id) => n + (sizeOf[id] || 1), 0);
+  let peak = 0;
+  for (let n = sFrom; n < sTo; n++) {
+    let c = 0;
+    for (const id of ids) {
+      const r = stayRange(stop, id);
+      if (r.from != null && r.to != null && r.from <= n && n < r.to) c += sizeOf[id] || 1;
+    }
+    peak = Math.max(peak, c);
+  }
+  return peak;
+}
+
 // ---- coverage ---------------------------------------------------------------
 // For a guest, work out the status of each night between arrive and depart.
 // A "night" of day N means the night starting on day N (checkout day = depart, exclusive).
@@ -55,18 +84,19 @@ export function guestCoverage(guest, stops) {
     return { nights: [], segments: [], summary: { covered: 0, "book-your-own": 0, gap: 0, total: 0 } };
   }
 
-  const beds = stops.filter(
-    (s) => s.type !== "activity" && s.guestIds && s.guestIds[guest.id] && toDay(s.from) != null && toDay(s.to) != null
-  );
+  const beds = stops
+    .filter((s) => s.type !== "activity" && s.guestIds && s.guestIds[guest.id])
+    .map((s) => ({ stop: s, range: stayRange(s, guest.id) }))
+    .filter((b) => b.range.from != null && b.range.to != null);
 
   const nightsArr = [];
   for (let n = a; n < d; n++) {
     let status = "gap";
     let stop = null;
-    for (const s of beds) {
-      if (toDay(s.from) <= n && n < toDay(s.to)) {
-        stop = s;
-        status = s.type === "covered" ? "covered" : "book-your-own";
+    for (const b of beds) {
+      if (b.range.from <= n && n < b.range.to) {
+        stop = b.stop;
+        status = b.stop.type === "covered" ? "covered" : "book-your-own";
         break;
       }
     }

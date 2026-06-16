@@ -1,19 +1,21 @@
 import React, { useState } from "react";
-import { STOP_TYPES } from "../config.js";
-import { fmt, nights } from "../lib/dates.js";
-import { setAssignment } from "../firebase.js";
+import { STOP_TYPES, ITINERARY_COLORS } from "../config.js";
+import { fmt, nights, stayRange, peakOccupancy } from "../lib/dates.js";
+import { setAssignment, setAssignmentRange } from "../firebase.js";
 import { mapsLink } from "../lib/geocode.js";
 import { Btn } from "./common.jsx";
 import Icon from "./icons.jsx";
+
+const dateCls = "border border-stone-200 rounded-md px-1.5 py-1 text-[11px] text-stone-600 bg-white";
 
 function StopCard({ stop, guests, onEdit, dragGuestId, setDragGuestId }) {
   const [over, setOver] = useState(false);
   const t = STOP_TYPES[stop.type] || STOP_TYPES.activity;
   const isActivity = stop.type === "activity";
   const assigned = guests.filter((g) => stop.guestIds && stop.guestIds[g.id]);
-  const headcount = assigned.reduce((n, g) => n + (Number(g.partySize) || 1), 0);
+  const peak = peakOccupancy(stop, guests);
   const unassigned = guests.filter((g) => !stop.guestIds || !stop.guestIds[g.id]);
-  const overCap = stop.capacity != null && headcount > stop.capacity;
+  const overCap = stop.capacity != null && peak > stop.capacity;
 
   function drop(e) {
     e.preventDefault();
@@ -50,7 +52,7 @@ function StopCard({ stop, guests, onEdit, dragGuestId, setDragGuestId }) {
             <span>{fmt(stop.from)} → {fmt(stop.to)} · {nights(stop.from, stop.to)}n</span>
             {stop.capacity != null && (
               <span className={`font-medium px-1.5 py-0.5 rounded-md ${overCap ? "bg-rose-50 text-rose-600" : "bg-stone-100 text-stone-500"}`}>
-                {headcount}/{stop.capacity} beds{overCap ? " · over" : ""}
+                {peak}/{stop.capacity} beds{overCap ? " · over" : ""}
               </span>
             )}
           </div>
@@ -72,15 +74,39 @@ function StopCard({ stop, guests, onEdit, dragGuestId, setDragGuestId }) {
         ) : assigned.length === 0 ? (
           <p className="text-xs text-stone-400">Nobody here yet. Drag someone in, or use the menu below.</p>
         ) : (
-          <ul className="space-y-1">
-            {assigned.map((g) => (
-              <li key={g.id} className="flex items-center justify-between text-sm bg-stone-50 rounded-lg pl-2.5 pr-1.5 py-1.5">
-                <span className="truncate text-stone-700">{g.name}{(Number(g.partySize) || 1) > 1 ? ` · ${g.partySize}` : ""}</span>
-                <button onClick={() => setAssignment(stop.id, g.id, false)} aria-label={`Remove ${g.name}`} className="text-stone-300 hover:text-rose-600 ml-2 shrink-0 p-0.5">
-                  <Icon name="x" size={14} />
-                </button>
-              </li>
-            ))}
+          <ul className="space-y-1.5">
+            {assigned.map((g) => {
+              const r = stayRange(stop, g.id);
+              return (
+                <li key={g.id} className="bg-stone-50 rounded-lg px-2.5 py-2">
+                  <div className="flex items-center justify-between">
+                    <span className="truncate text-sm text-stone-700">{g.name}{(Number(g.partySize) || 1) > 1 ? ` · ${g.partySize}` : ""}</span>
+                    <button onClick={() => setAssignment(stop.id, g.id, false)} aria-label={`Remove ${g.name}`} className="text-stone-300 hover:text-rose-600 ml-2 shrink-0 p-0.5">
+                      <Icon name="x" size={14} />
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-1.5">
+                    <input
+                      type="date"
+                      className={dateCls}
+                      value={r.fromIso || ""}
+                      min={stop.from}
+                      max={stop.to}
+                      onChange={(e) => setAssignmentRange(stop.id, g.id, e.target.value, r.toIso)}
+                    />
+                    <span className="text-stone-300 text-xs">→</span>
+                    <input
+                      type="date"
+                      className={dateCls}
+                      value={r.toIso || ""}
+                      min={stop.from}
+                      max={stop.to}
+                      onChange={(e) => setAssignmentRange(stop.id, g.id, r.fromIso, e.target.value)}
+                    />
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
@@ -101,7 +127,7 @@ function StopCard({ stop, guests, onEdit, dragGuestId, setDragGuestId }) {
   );
 }
 
-export default function OrganiseBoard({ guests, stops, onEditStop, onAddStop, dragGuestId, setDragGuestId }) {
+export default function OrganiseBoard({ guests, stops, itinerary, onEditStop, onAddStop, onEditItinerary, onAddItinerary, dragGuestId, setDragGuestId }) {
   const beds = stops.filter((s) => s.type !== "activity");
   const activities = stops.filter((s) => s.type === "activity");
 
@@ -110,9 +136,42 @@ export default function OrganiseBoard({ guests, stops, onEditStop, onAddStop, dr
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="font-display text-2xl text-emerald-950 tracking-tight">Organise</h2>
-          <p className="text-sm text-stone-500 mt-1 max-w-lg">Add the places you're organising, then drop people in. Gaps show up as “book your own” on everyone's timeline.</p>
+          <p className="text-sm text-stone-500 mt-1 max-w-lg">Add the places you're organising, then drop people in. Each person can have their own dates within a house. Gaps show up as “book your own” on everyone's timeline.</p>
         </div>
         <Btn onClick={onAddStop} className="shrink-0"><Icon name="plus" size={15} /> Add stop</Btn>
+      </div>
+
+      {/* Itinerary / the rough plan */}
+      <div className="bg-white border border-stone-200 rounded-2xl p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="font-display text-base text-emerald-950">The plan</h3>
+            <p className="text-xs text-stone-500 mt-0.5">The rough itinerary shown along the top of everyone's timeline.</p>
+          </div>
+          <Btn variant="outline" onClick={onAddItinerary} className="shrink-0 !py-1.5"><Icon name="plus" size={14} /> Add phase</Btn>
+        </div>
+        {(!itinerary || itinerary.length === 0) ? (
+          <p className="text-xs text-stone-400">Nothing yet — e.g. “Around Ennis”, “Wedding weekend”, “Kerry”.</p>
+        ) : (
+          <ul className="flex flex-wrap gap-2">
+            {itinerary.map((p, i) => {
+              const c = ITINERARY_COLORS[i % ITINERARY_COLORS.length];
+              return (
+                <li key={p.id}>
+                  <button
+                    onClick={() => onEditItinerary(p)}
+                    className="flex items-center gap-2 rounded-lg pl-2.5 pr-3 py-1.5 text-xs hover:brightness-95 transition"
+                    style={{ background: c.bg, color: c.text }}
+                  >
+                    <span className="w-2 h-2 rounded-full" style={{ background: c.border }} />
+                    <span className="font-medium">{p.label}</span>
+                    <span className="opacity-70">{fmt(p.from)}–{fmt(p.to)}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
 
       {stops.length === 0 ? (
