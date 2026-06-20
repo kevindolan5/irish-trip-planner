@@ -186,13 +186,13 @@ export default function Timeline({ guests, stops, itinerary = [], onPickGuest })
             {itinerary.map((p, i) => {
               const c = ITINERARY_COLORS[i % ITINERARY_COLORS.length];
               return (
-                <li key={p.id} className="flex items-center gap-3 px-4 py-3">
-                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.border }} />
+                <li key={p.id} className="flex items-start gap-3 px-4 py-3">
+                  <span className="w-2.5 h-2.5 rounded-full shrink-0 mt-1" style={{ background: c.border }} />
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-stone-800 truncate">{p.label}</div>
-                    {p.note && <div className="text-xs text-stone-500 mt-0.5 truncate">{p.note}</div>}
+                    <div className="text-sm font-medium text-stone-800">{p.label}</div>
+                    {p.note && <div className="text-xs text-stone-500 mt-0.5">{p.note}</div>}
                   </div>
-                  <div className="text-sm text-stone-500 shrink-0">{fmt(p.from)} – {fmt(p.to)}</div>
+                  <div className="text-sm text-stone-500 shrink-0 text-right">{fmt(p.from)} – {fmt(p.to)}</div>
                 </li>
               );
             })}
